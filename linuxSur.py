@@ -174,7 +174,7 @@ def w2File(result,filename,i=0):
         with open("/tmp/info/"+filename,'w') as f:
             print(result,file=f)
 
-def xferFile():
+def xferFile(dfile,IPandLoc):
     # encode and gzip, then xfer
     # uuencode -m <file to encode>
     # ssh <IP> uuencode -m /bin/ls - | unudecode > ls
