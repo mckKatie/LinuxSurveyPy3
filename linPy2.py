@@ -162,16 +162,31 @@ def nextStuff():
         pass # print("no atq")
     
     every.append("Label: history")
-    every.append(bashCmd("cat /root/.bash_history /home/*/*history"))
+    temp=""
+    with open("/root/.bash_history","r") as f:
+        stuff=f.readlines()
+    
+    for i in stuff:
+        temp+=i.split('\n')[0]
+    temp+="\n"
+    stuff2=""
+    for name in glob("/home/*"):
+        if "history" in name:
+            with open(name,"r") as f:
+                stuff2+=f.readlines()
+    for i in stuff2:
+        temp+=i.split("\n")[0]
+    every.append(temp)
+    #every.append(bashCmd("cat /root/.bash_history /home/*/*history"))
     every.append("Label: find \".*\" files")
-    every.append(bashCmd("find / -type f -name \".*\""))
+    every.append(bashCmd("find / -type f -name \".*\"")[0])
     every.append("Label: find \".*\" directories")
-    every.append(bashCmd("find / -type d -name \".*\""))
+    every.append(bashCmd("find / -type d -name \".*\"")[0])
     every.append("Label: service status")
-    every.append(bashCmd("service --status-all"))
+    every.append(bashCmd("service --status-all")[0])
     try:
         every.append("Label: check configs")
-        every.append(bashCmd("chkconfig --list"))
+        every.append(bashCmd("chkconfig --list")[0])
     except:
         every.append("no chkconfig")
     try: 
