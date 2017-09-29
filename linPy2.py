@@ -146,20 +146,16 @@ def nextStuff():
         result=bashCmd("service audit stop")
     except:
         result=bashCmd("systemctl stop audit")
-    #if(result==1): every.append("auditting stopped")
-    #else: print("audit on")
-    #every.append("Label: lsof -l nP")
-    #every.append(bashCmd("lsof -l nP")[0])
+    
     every.append("Label: lsb_release")
     every.append(bashCmd("lsb_release")[0])
     every.append("Label: grep for cronjobs")
-    every.append(bashCmd("grep -v \"^#||^$\" /etc/crontab /var/spool/cron /crontabs/*"+
-        " /etc/cron.* /etc/cron.d/* /va/spool/cron/atjobs/* 2>/dev/null")[0])
+    every.append(bashCmd("grep -v \"^#||^$\" /etc/crontab /var/spool/cron /crontabs/* /etc/cron.* /etc/cron.d/* /va/spool/cron/atjobs/* 2>/dev/null")[0])
     try:
         every.append("Label: atq")
         every.append(bashCmd("atq")[0])
     except:
-        pass # print("no atq")
+        pass
     
     every.append("Label: history")
     temp=""
@@ -167,7 +163,7 @@ def nextStuff():
         stuff=f.readlines()
     
     for i in stuff:
-        temp+=i.split('\n')[0]
+        temp+=i
     temp+="\n"
     stuff2=""
     for name in glob("/home/*"):
@@ -175,7 +171,7 @@ def nextStuff():
             with open(name,"r") as f:
                 stuff2+=f.readlines()
     for i in stuff2:
-        temp+=i.split("\n")[0]
+        temp+=i
     every.append(temp)
     #every.append(bashCmd("cat /root/.bash_history /home/*/*history"))
     every.append("Label: find \".*\" files")
@@ -192,16 +188,17 @@ def nextStuff():
     try: 
         result=bashCmd("ulimit -c",1)
         every.append("Label: ulimit -c")
-        every.append("ulimit -c: "+result)
+        every.append(result)
     except: pass # print("no ulimit")
-    ''' 
+    os.chdir("/home") 
     every.append("Label: ls /home")
-    every.append(bashCmd("ls -laR /home"))
+    every.append(bashCmd("ls -laR /home")[0])
+    os.chdir("/")
     every.append("Label: ls /")
-    every.append(bashCmd("ls -laR / "))
+    every.append(bashCmd("ls -laR / ")[0])
     every.append("Label: find special perm files")
-    every.append(bashCmd("find / -uid 0 -perm -4000"))
-    '''
+    every.append(bashCmd("find / -uid 0 -perm -4000")[0])
+    
     for i in range(0,len(every)):
         w2File(every[i],"final")
     
@@ -209,6 +206,7 @@ def nextStuff():
 def getLogs():
     every=[]
     every.append("Label: find recently touched logs")
+    os.chdir("/var/log")
     every.append(bashCmd("find /var/log -type f -mmin -30"))
     every.append("Label: find logs w/ ip "+args.destinationIP)
     every.append(bashCmd("grep -n \""+args.destinationIP+"\" /var/log/*"))
@@ -288,6 +286,7 @@ def logClean(IPandLoc):
     # xfer file
     xferFile("final",IPandLoc)
     # find all info files
+    os.chdir("/tmp/info")
     files=bashCmd("ls /tmp/info")
     files2=files.split()
     for i in files2:
